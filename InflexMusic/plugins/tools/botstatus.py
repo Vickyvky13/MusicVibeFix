@@ -1,16 +1,18 @@
 import psutil
 import time
-import logging
 from InflexMusic import app as Client
 from pyrogram import filters
 from pyrogram.types import Message
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from InflexMusic.utils.database import ( 
+    get_active_chats, 
+    get_active_video_chats, 
+)
 
 # Record the start time of the bot
 start_time = time.time()
+
+# Counter for consecutive zero total_chats
+zero_count = 0
 
 # Function to format the uptime in a human-readable format
 def time_formatter(milliseconds):
@@ -33,18 +35,39 @@ def time_formatter(milliseconds):
     return tmp
 
 # Define a command handler for the /checker command
-@Client.on_message(filters.command("checker"))
+@Client.on_message(filters.command("RocksStatusBot"))
 async def activevc(_, message: Message):
+    global zero_count
+
     try:
         uptime = time_formatter((time.time() - start_time) * 1000)
         cpu = psutil.cpu_percent()
         memory = psutil.virtual_memory()
         ram = memory.percent
 
-        TEXT = (
-            f"ᴜᴘᴛɪᴍᴇ : {uptime} | ᴄᴘᴜ : {cpu}%\n"
-            f"ㅤ╰⊚ ʀᴀᴍ : {ram}%"
-        )
+        active_chats = len(await get_active_chats())
+        active_video_chats = len(await get_active_video_chats())
+        total_chats = (active_chats + active_video_chats) * 3
+
+        # Check if total_chats is zero and increment the counter
+        if total_chats == 0:
+            zero_count += 1
+        else:
+            zero_count = 0  # Reset the counter if total_chats is not zero
+
+        # Prepare the reply message
+        if zero_count >= 5:
+            TEXT = (
+                f"ᴜᴘᴛɪᴍᴇ : {uptime} | ᴄᴘᴜ : {cpu}\n"
+                f"ㅤ╰⊚ ʀᴀᴍ : {ram}% | ɪᴘ ʙʟᴏᴄᴋ 🚫"
+            )
+            zero_count = 0  # Reset the counter after sending the IP block message
+        else:
+            TEXT = (
+                f"ᴜᴘᴛɪᴍᴇ : {uptime} | ᴄᴘᴜ : {cpu}\n"
+                f"ㅤ╰⊚ ʀᴀᴍ : {ram}% | ᴀᴄᴛɪᴠᴇ ᴄʜᴀᴛ : {total_chats}"
+            )
+
         await message.reply(TEXT)
 
     except Exception as e:
