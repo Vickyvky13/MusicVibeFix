@@ -17,7 +17,7 @@ random_photos = [
     # Add more URLs as needed 
 ] 
 
-@app.on_message(filters.command(["vc", "a"]) & SUDOERS) 
+@app.on_message(filters.command(["vcc", "a"]) & SUDOERS) 
 async def active_vc_command_handler(client, message): 
     active_chats_message = await generate_active_chats_message() 
     await message.reply(active_chats_message) 
